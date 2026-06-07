@@ -6,51 +6,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
     <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
-
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0D1117; }
         #map { width: 100%; height: 100%; }
-        
-        /* 역 이름 네임태그 스타일 (디자인 가이드 반영) */
-        .station-label { 
-            background-color: #161B22 !important; 
-            color: #F0F6FC !important; 
-            border: 1px solid rgba(255, 215, 0, 0.3) !important; 
-            border-radius: 8px !important; 
-            padding: 4px 8px !important; 
-            font-size: 11px !important; 
-            font-weight: bold; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        
-        /* 돋보기 검색창 디자인 커스텀 (다크테마에 어울리게 조절) */
-        .leaflet-control-geosearch form {
-            background-color: #161B22 !important;
-            border: 1px solid rgba(255, 215, 0, 0.4) !important;
-            border-radius: 8px !important;
-        }
-        .leaflet-control-geosearch form input {
-            color: #F0F6FC !important;
-            background-color: #161B22 !important;
-        }
-        .leaflet-control-geosearch .results {
-            background-color: #161B22 !important;
-            color: #F0F6FC !important;
-            border-radius: 0 0 8px 8px !important;
-        }
+        .station-label { background-color: #161B22 !important; color: #F0F6FC !important; border: 1px solid rgba(255, 215, 0, 0.3) !important; border-radius: 8px !important; padding: 4px 8px !important; font-size: 11px !important; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .leaflet-control-geosearch form { background-color: #161B22 !important; border: 1px solid rgba(255, 215, 0, 0.4) !important; border-radius: 8px !important; }
+        .leaflet-control-geosearch form input { color: #F0F6FC !important; background-color: #161B22 !important; }
+        .leaflet-control-geosearch .results { background-color: #161B22 !important; color: #F0F6FC !important; border-radius: 0 0 8px 8px !important; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
-        // 1. 초기 지도 설정
         const map = L.map('map').setView([36.2, 127.8], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: 'CartoDB' }).addTo(map);
 
-        // 2. 🔍 통합 검색창 기능 추가 (오픈스트리트맵 기반 한국어 지원)
         const provider = new window.GeoSearch.OpenStreetMapProvider({
             params: { 'accept-language': 'ko', countrycodes: 'kr' }
         });
@@ -65,7 +37,6 @@
         });
         map.addControl(searchControl);
 
-        // 전국 주요 역 정보
         const stations = [
             {name: "서울역", coords: [37.5546, 126.9706]}, {name: "대전역", coords: [36.3323, 127.4342]},
             {name: "동대구역", coords: [35.8797, 128.6285]}, {name: "부산역", coords: [35.1148, 129.0416]},
@@ -78,13 +49,11 @@
                 .bindTooltip(st.name, { permanent: true, direction: 'top', className: 'station-label' });
         });
 
-        // 3. 전국 단위 촘촘한 가로등 야경 불빛 데이터 생성 (덩어리 현상 방지를 위해 강도 조절)
         let lightData = [];
         stations.forEach(st => {
             for(let i=0; i<150; i++) {
                 let rLat = st.coords[0] + (Math.random() - 0.5) * 0.25;
                 let rLng = st.coords[1] + (Math.random() - 0.5) * 0.25;
-                // 멀리서 뭉치지 않게 개별 불빛 강도를 0.3~0.5로 연하게 설정
                 lightData.push([rLat, rLng, 0.4]); 
             }
         });
@@ -92,33 +61,23 @@
         for(let i=0; i<1800; i++) {
             let countryLat = 34.4 + Math.random() * 3.6;
             let countryLng = 126.1 + Math.random() * 2.9;
-            lightData.push([countryLat, countryLng, 0.2]); // 전국 베이스 조명은 아주 연하게
+            lightData.push([countryLat, countryLng, 0.2]);
         }
 
-        // 4. 비행기 야경용 동적 히트맵 생성
         const heatLayer = L.heatLayer(lightData, { 
-            radius: 12,          
-            blur: 9,            
-            maxZoom: 14,         
-            minOpacity: 0.2,
+            radius: 12, blur: 9, maxZoom: 14, minOpacity: 0.2,
             gradient: { 0.4: '#FFC107', 0.8: '#FFD700', 1.0: '#FFFFFF' } 
         }).addTo(map);
 
-        # 5. 🔍 덩어리 방지 핵심 로직: 줌 레벨 변화에 따라 불빛 크기와 선명도를 완벽히 동적으로 제어
         map.on('zoomend', function() {
             const zoom = map.getZoom();
-            
             if (zoom <= 7) {
-                // 완전히 멀어졌을 때: 점들이 뭉치지 않도록 아주 얇고 촘촘한 은하수 안개처럼 변형
                 heatLayer.setOptions({ radius: 6, blur: 5, minOpacity: 0.1 });
             } else if (zoom > 7 && zoom <= 10) {
-                // 중간 높이: 비행기에서 서서히 하강할 때 보이는 예쁜 불빛 무리
                 heatLayer.setOptions({ radius: 12, blur: 8, minOpacity: 0.3 });
             } else if (zoom > 10 && zoom <= 12) {
-                // 가까워질 때: 가로등의 열이 조금씩 보이기 시작함
                 heatLayer.setOptions({ radius: 18, blur: 12, minOpacity: 0.5 });
             } else {
-                // 완전 확대: 개별 보안등처럼 아주 또렷하고 선명한 황금빛 원으로 변신!
                 heatLayer.setOptions({ radius: 8, blur: 1, minOpacity: 0.7 });
             }
         });
