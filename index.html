@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>밝은길 - 밤길 안심 지도</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0D1117; }
+        #map { width: 100%; height: 100%; }
+        .station-label { background-color: #161B22 !important; color: #F0F6FC !important; border: 1px solid rgba(255, 215, 0, 0.3) !important; border-radius: 8px !important; padding: 4px 8px !important; font-size: 11px !important; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        const map = L.map('map').setView([36.2, 127.8], 7);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: 'CartoDB' }).addTo(map);
+
+        // 전국 주요 역 이름 상시 말풍선 표시
+        const stations = [
+            {name: "서울역", coords: [37.5546, 126.9706]}, {name: "대전역", coords: [36.3323, 127.4342]},
+            {name: "동대구역", coords: [35.8797, 128.6285]}, {name: "부산역", coords: [35.1148, 129.0416]},
+            {name: "포항역", coords: [36.0722, 129.3413]}
+        ];
+        stations.forEach(st => {
+            L.circleMarker(st.coords, { radius: 0, opacity: 0 }).addTo(map)
+                .bindTooltip(st.name, { permanent: true, direction: 'top', className: 'station-label' });
+        });
+
+        // 비행기 야경 느낌의 전국 황금빛 보안등 불빛 가상 데이터 생성
+        let lightData = [];
+        stations.forEach(st => {
+            for(let i=0; i<100; i++) {
+                let rLat = st.coords[0] + (Math.random() - 0.5) * 0.15;
+                let rLng = st.coords[1] + (Math.random() - 0.5) * 0.15;
+                lightData.push([rLat, rLng, 0.7]);
+            }
+        });
+        L.heatLayer(lightData, { radius: 20, blur: 15, gradient: { 0.4: '#FFC107', 0.8: '#FFD700', 1.0: '#FFFFFF' } }).addTo(map);
+    </script>
+</body>
+</html>
